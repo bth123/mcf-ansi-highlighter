@@ -8,7 +8,10 @@
 2.
 ![highlighter](illustrations/highlighter2.png)
 ![vsc](illustrations/vsc2.png)
- 
+
+## Little note
+It may not work 100% accurately with backslash line breaks
+
 ## Use in your projects
 If you want to use the highlighter in your project, please mention link to the original github repo.
 1. Downlaod `database.json` and put it in your project folder.
