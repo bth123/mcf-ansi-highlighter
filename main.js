@@ -313,7 +313,7 @@ class Highlighter {
             return rawCommand;
         } else if (rawCommand[0] === "#") {
             if (rawCommand[1] === "#" || rawCommand[1] === ">") {
-                return " ".repeat(tabsCount) + colors["comment"] + "#>" + colors["link-comment"] + rawCommand.substring(2);
+                return " ".repeat(tabsCount) + colors["comment"] + rawCommand.slice(0, 2) + colors["link-comment"] + rawCommand.substring(2) + "\u001b[0;0m";
             } else {
                 return `${' '.repeat(tabsCount)}${colors['comment']}${rawCommand}`;
             }
