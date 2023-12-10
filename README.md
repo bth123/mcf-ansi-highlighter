@@ -8,11 +8,11 @@
 2.
 ![highlighter](illustrations/highlighter2.png)
 ![vsc](illustrations/vsc2.png)
-
+ 
 ## Use in your projects
 If you want to use the highlighter in your project, please mention link to the original github repo.
 1. Downlaod `database.json` and put it in your project folder.
-### Python
+### Python 
 2. Download `highlighter.py` and put it in your project folder.
 3. From `highlighter` import class `Highlighter` in your code.
 4. Use `Highlighter.highlight("<Your function here>")` to get the ansi highlighted function.
