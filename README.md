@@ -9,24 +9,26 @@
 ![highlighter](illustrations/highlighter2.png)
 ![vsc](illustrations/vsc2.png)
 
-## Use as module
+## Use in your projects
+If you want to use the highlighter in your project, please mention link to the original github repo.
+1. Downlaod `database.json` and put it in your project folder.
 ### Python
-1. Download `highlighter.py` and `database.json` and put it in your project folder.
-2. Write `import path.to.highlighter` in your code.
-3. Use `highlighter.highlight("<Your function here>")` to get the ansi highlighted function.
+2. Download `highlighter.py` and put it in your project folder.
+3. From `highlighter` import class `Highlighter` in your code.
+4. Use `Highlighter.highlight("<Your function here>")` to get the ansi highlighted function.
 ### JavaScript
-1. Download `highlighter.js` and `database.json` and put it in your project folder.
-2. Write `import "path.to.highlighter"` in your code.
-3. Use `highlighter.highlight("<Your function here>")` to get the ansi highlighted function.
+2. Download `highlighter.js` and put it in your project folder.
+3. From `highlighter` require calss `Highlighter` in your code.
+4. Use `Highlighter.highlight("<Your function here>")` to get the ansi highlighted function.
 ### C++
-1. Download `highlighter.h` and `database.json` and put it in your project folder.
-2. Write `#include <path/to/highlighter.h>` in your code.
-3. Use `highlighter::highlight("<Your function here>")` to get the ansi highlighted function.
+2. Download `highlighter.h` and put it in your project folder.
+3. Include the header in your code.
+4. Use `highlighter::Highlighter.highlight("<Your function here>")` to get the ansi highlighted function.
 
-Note: `database.json` must be at the same folder as `highlighter`
+Note: `database.json` must be at the folder where code executing. If for some reason you can't place it in that way, edit it's path in the module file.
 
 ## Other features
-Also, highlighter has a few more functions that might be useful:
+Highlighter has a few more functions that might be useful:
 - `split("<command>")` - splits command to elements: `"execute as @e[type=pig, nbt={CustomName:'{"text":"Ruben"}'}] run say gex"` -> `["execute", "as", "@e[type=pig, nbt={CustomName:'{"text":"Ruben"}'}]", "run", "say", "gex"]`
 - `target("<selector>")` highlights selector: `"@e[type=pig]"` -> `"[36m@e[33m[[32mtype[34m=[37mpig[33m]"`
 - `nbt("<tag>")` highlights nbt tag: `"{NoAI:1b}"` -> `"[33m{[32mNoAI[34m: [37m1b[33m}"`
