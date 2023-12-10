@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<style>
+	h1 {
+		color: #FFF;
+		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	}
+	body {
+		background: #313338;
+	}
+	textarea {
+		color: #FFF;
+		background-color: #2b2d31;
+		border-color: #1e1f22;
+		border-right-color: #1e1f22;
+		caret-color: #FFF;
+		border-radius: 1%;
+		width: 600px;
+		height: 300px;
+	}
+	textarea:focus {
+		outline: #1e1f22;
+	}
+	textarea::-webkit-resizer {
+		background-color: #2b2d31;
+	}
+	button {
+		color: #FFF;
+		font-family: Verdana, Geneva, Tahoma, sans-serif;
+		font-size: 15px;
+		font-weight: 500;
+		background-color: #5865f2;
+		border: #5865f2;
+		border-radius: 3px;
+		width: 150px;
+		height: 50px;
+	}
+	button:hover {
+		background-color: #4752c4;
+		cursor: pointer;
+	}
+</style>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="logo.png">
+	<title>Highlighter</title>
+</head>
+<body align="center">
+	<div>
+		<h1>Highlighter</h1>
+	</div>
+	<div>
+		<textarea id="mcfunctionEntry" placeholder="Your function goes here" autofocus></textarea><br>
+		<button onclick="highlightText()">Copy Highlighted</button>
+		<script src="main.js"></script>
+		<script>
+			function highlightText() {
+				var mcfunction = document.getElementById("mcfunctionEntry").value;
+				var highlightedMcfunction = Highlighter.highlight(mcfunction);
+				navigator.clipboard.writeText(highlightedMcfunction);
+				alert("Copied the text: " + highlightedMcfunction);
+			}
+		  </script>
+	</div>
+</body>
+</html>
