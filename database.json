@@ -2,8 +2,9 @@
 	"color_codes": {
 		"comment": "\u001b[30m",
 		"link-comment": "\u001b[4;34m",
+		"backslash": "\u001b[30m",
 
-		"macro": "\u001b[0m",
+		"macro": "\u001b[34m",
 
 		"command": "\u001b[35m",
 		"subcommand": "\u001b[34m",
