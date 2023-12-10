@@ -20,10 +20,6 @@ If you want to use the highlighter in your project, please mention link to the o
 2. Download `highlighter.js` and put it in your project folder.
 3. From `highlighter` require calss `Highlighter` in your code.
 4. Use `Highlighter.highlight("<Your function here>")` to get the ansi highlighted function.
-### C++
-2. Download `highlighter.h` and put it in your project folder.
-3. Include the header in your code.
-4. Use `highlighter::Highlighter.highlight("<Your function here>")` to get the ansi highlighted function.
 
 Note: `database.json` must be at the folder where code executing. If for some reason you can't place it in that way, edit it's path in the module file.
 
