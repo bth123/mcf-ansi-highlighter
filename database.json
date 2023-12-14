@@ -1,7 +1,7 @@
 {
 	"color_codes": {
 		"comment": "\u001b[30m",
-		"link-comment": "\u001b[4;34m",
+		"link-comment": "\u001b[34m",
 		"backslash": "\u001b[30m",
 
 		"macro": "\u001b[34m",
@@ -12,7 +12,7 @@
 		"selector": "\u001b[36m",
 		"delimiter": "\u001b[34m",
 		
-		"argument": "\u001b[0m",
+		"text": "\u001b[0m",
 		"path": "\u001b[33m",
 		"number": "\u001b[32m",
 		
@@ -22,7 +22,7 @@
 		
 		"key": "\u001b[0m",
 		"value": "\u001b[32m",
-		"str_value": "\u001b[33m"
+		"string": "\u001b[33m"
 	},
 	"commands": {
 		"advancement": {
