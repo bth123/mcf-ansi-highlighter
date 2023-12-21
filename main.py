@@ -13,7 +13,7 @@ class Highlighter:
 				"comment": r'(?m)^#.*$',
 				"string": r'(?<!\\)(?:"(?:\\.|[^"])*"|\'(?:\\.|[^\'])*\')',
 				"macro": r'\$\([a-zA-Z0-9_-]*\)',
-				"path": r'[A-Za-z]+:[\.\-_A-Za-z]+',
+				"path": r'[\.\-_A-Za-z]+:[\.\-_A-Za-z]+',
 				"selector": r'[#@$][a-zA-Z0-9]+',
 				"number": r'[~^|0-9]+\.?[0-9]*[bdfs]?(?=[^%])',
 				"text": r'[A-Za-z_\-\.]+'
@@ -87,8 +87,8 @@ class Highlighter:
 				Highlighter.function_copy = Highlighter.function_copy.replace(match, "")
 		# Lexing
 		temp = [Highlighter.function_copy]
-		function_elements["selector_filter"] = Highlighter.brackets_slice("[]", temp, True)
 		function_elements["nbt"] = Highlighter.brackets_slice("{}", temp, True)
+		function_elements["selector_filter"] = Highlighter.brackets_slice("[]", temp, True)
 		for name, regex in regexes.items():
 			cut_by_regex(name, regex)
 		return function_elements
@@ -108,6 +108,7 @@ class Highlighter:
 			elif word in possible_subcommands:
 				function_elements["subcommand"].append(word)
 				function_elements["text"].remove(word)
+		print(function_elements)
 		# ✨ Colorizing
 		raw_nbt_thing = '|(?=\u001b)'
 		for type, tokens in function_elements.items():
@@ -132,7 +133,7 @@ class Highlighter:
 			.replace("..", f"{colors['bracket1']}..{colors['value']}")\
 			.replace("#", f"{colors['selector']}#")
 		for index, tag in enumerate(nbts):
-			highlighted = highlighted.replace(f"%%%nbt{index}%%%", Highlighter.nbt(tag, brackets_depth=0))
+			highlighted = highlighted.replace(f"%%%nbt{index}%%%", tag)
 		return highlighted
 
 	def nbt(tag, brackets_depth=-1):
