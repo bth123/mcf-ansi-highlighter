@@ -1,6 +1,5 @@
 import re
 from json import loads
-from pyperclip import copy
 
 class Highlighter:
 	class Database:
@@ -15,8 +14,8 @@ class Highlighter:
 				"string": r'(?<!\\)(?:"(?:\\.|[^"])*"|\'(?:\\.|[^\'])*\')',
 				"macro": r'\$\([a-zA-Z0-9_-]*\)',
 				"path": r'[A-Za-z]+:[\.\-_A-Za-z]+',
-				"number": r'[~^|0-9]+\.?[0-9]*[bdfs]?[^%]',
-				"selector": r'[@$#$][a-zA-Z0-9]',
+				"selector": r'[#@$][a-zA-Z0-9]+',
+				"number": r'[~^|0-9]+\.?[0-9]*[bdfs]?(?=[^%])',
 				"text": r'[A-Za-z_\-\.]+'
 			},
 			"extended": {
@@ -109,13 +108,12 @@ class Highlighter:
 			elif word in possible_subcommands:
 				function_elements["subcommand"].append(word)
 				function_elements["text"].remove(word)
-		print(function_elements)
-		# ✨ Colorizing мб конфлікт регексів старих і нових. Чекни потом пробіли, може вони все паганть гандони
-		spaces = ' \n\t'
+		# ✨ Colorizing
+		raw_nbt_thing = '|(?=\u001b)'
 		for type, tokens in function_elements.items():
 			for token in tokens:
 				if type not in multiple_colors_types:
-					function = re.sub(f"(?m)(?:(?<=\\s)|(?<=^)){token}(?:(?=\\s)|(?=$))", f"{colors[type]}{token}", function)
+					function = re.sub(f"(?m)(?:(?<=\\s)|(?<=^)){token}(?:(?=\\s)|(?=$){raw_nbt_thing if type in 'text selector' else ''})", f"{colors[type]}{token}", function)
 				else:
 					function = function.replace(token, multiple_colors_types[type](token))
 		return function
@@ -189,18 +187,3 @@ class Highlighter:
 		return f"{colors['macro']}${colors['bracket0']}({colors['text']}{macro[2:-1]}{colors['bracket0']})"
 
 Highlighter.Database.multiple_colors_types = {"selector_filter": Highlighter.selector_filter, "nbt": Highlighter.nbt, "macro": Highlighter.macro}
-
-a = Highlighter.highlight("""xp set @s 0 points
-xp set @s 129 levels
-
-data remove storage ns:storage root.temp.xp
-
-scoreboard players operation $temp ns.int = @s ns.xp.current
-scoreboard players operation $temp ns.int *= #1000 ns.int
-execute store result storage ns:storage root.temp.xp.current int 1 run scoreboard players operation $temp ns.int /= @s ns.xp.max
-
-execute store result storage ns:storage root.temp.xp.level int 1 run scoreboard players get @s ns.xp.level
-
-function ns:set_xp_bar with storage ns:storage root.temp.xp""")
-
-copy(f"```ansi\n{a}\n```")
