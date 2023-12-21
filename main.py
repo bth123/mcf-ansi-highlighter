@@ -14,7 +14,7 @@ class Highlighter:
 				"comment": r'(?m)^#.*$',
 				"string": r'(?<!\\)(?:"(?:\\.|[^"])*"|\'(?:\\.|[^\'])*\')',
 				"macro": r'\$\([a-zA-Z0-9_-]*\)',
-				"path": r'[A-Za-z]+:[\.A-Za-z]+',
+				"path": r'[A-Za-z]+:[\.\-_A-Za-z]+',
 				"number": r'[~^|0-9]+\.?[0-9]*[bdfs]?[^%]',
 				"selector": r'[@$#$][a-zA-Z0-9]',
 				"text": r'[A-Za-z_\-\.]+'
