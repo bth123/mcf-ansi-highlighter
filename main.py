@@ -1,11 +1,13 @@
 import re
 from json import loads
+from pyperclip import copy
 
 class Highlighter:
 	class Database:
 		with open("database.json", "r", encoding="utf-8") as db:
 			database_content = loads(db.read())
 		color_codes = database_content["color_codes"]
+		color_classes = database_content["color_classes"]
 		commands = database_content["commands"]
 		regexes = {
 			"general": {
@@ -13,14 +15,15 @@ class Highlighter:
 				"comment": r'(?m)^#.*$',
 				"string": r'(?<!\\)(?:"(?:\\.|[^"])*"|\'(?:\\.|[^\'])*\')',
 				"macro": r'\$\([a-zA-Z0-9_-]*\)',
-				"path": r'[\.\-_A-Za-z]+:[\.\-_A-Za-z]+',
-				"selector": r'[#@$][a-zA-Z0-9]+',
+				"path": r'[\.\-_A-Za-z0-9]+:[\.\-_A-Za-z0-9]+',
+				"selector": r'[#@][a-zA-Z0-9]+',
 				"number": r'[~^|0-9]+\.?[0-9]*[bdfs]?(?=[^%])',
-				"text": r'[A-Za-z_\-\.]+'
+				"text": r'\$?[A-Za-z_\-\.]+'
 			},
 			"extended": {
-				"nbt_parts": r'(\\\n|\$\([a-zA-Z0-9_-]*\)|string[0-9]+|[a-zA-Z_]\w*|[0-9]+.?[0-9]*[bdfs]?|[\[\]{},:;])'
-			}
+				"nbt_parts": r'(\\\n|\$\([a-zA-Z0-9_-]*\)|string[0-9]+|[a-zA-Z0-9_]\w*|[0-9]+.?[0-9]*[bdfs]?|\.\.|[\[\]{},.:;=])'
+			},
+			"ansi_codes": r'(([30][0-7]?)(;(4[0-7]))?m)'
 		}
 	root_command = ""
 
@@ -31,9 +34,13 @@ class Highlighter:
 				unique_list.append(item)
 		return unique_list
 
-	def highlight(function):
+	def highlight(function, mode="ansi"):
 		function_elements = Highlighter.general_lexer(function)
-		return Highlighter.colorizer(function, function_elements)
+		ansi_highlighted = Highlighter.colorizer(function, function_elements)
+		if mode == "ansi":
+			return ansi_highlighted
+		elif mode == "html":
+			return Highlighter.ansi2html(ansi_highlighted)
 
 	def brackets_slice(brackets_type, slice_string, replace_slices, replace_string=""):
 		slices = []
@@ -87,8 +94,8 @@ class Highlighter:
 				Highlighter.function_copy = Highlighter.function_copy.replace(match, "")
 		# Lexing
 		temp = [Highlighter.function_copy]
+		function_elements["selector_filter"] = Highlighter.brackets_slice("[]", temp, False)
 		function_elements["nbt"] = Highlighter.brackets_slice("{}", temp, True)
-		function_elements["selector_filter"] = Highlighter.brackets_slice("[]", temp, True)
 		for name, regex in regexes.items():
 			cut_by_regex(name, regex)
 		return function_elements
@@ -101,12 +108,16 @@ class Highlighter:
 		# Extending command_elements with commands and subcommands
 		possible_subcommands = []
 		for word in list(function_elements["text"]):
-			if word in possible_commands:
+			raw_word = word.replace("$", "")
+			if raw_word in possible_commands:
 				function_elements["command"].append(word)
 				function_elements["text"].remove(word)
-				possible_subcommands += possible_commands[word]["subcommands"]
+				possible_subcommands += possible_commands[raw_word]["subcommands"]
 			elif word in possible_subcommands:
 				function_elements["subcommand"].append(word)
+				function_elements["text"].remove(word)
+			elif raw_word != word:
+				function_elements["selector"].append(word)
 				function_elements["text"].remove(word)
 		print(function_elements)
 		# ✨ Colorizing
@@ -114,8 +125,12 @@ class Highlighter:
 		for type, tokens in function_elements.items():
 			for token in tokens:
 				if type not in multiple_colors_types:
-					function = re.sub(f"(?m)(?:(?<=\\s)|(?<=^)){token}(?:(?=\\s)|(?=$){raw_nbt_thing if type in 'text selector' else ''})", f"{colors[type]}{token}", function)
+				#                                   Formatting token to aviod regex perceive "$" as a start of line
+				#																  |
+				#																  v
+					function = re.sub("(?m)(?:(?<=\\s)|(?<=^))"+token.replace("$", "\\$")+f"(?:(?=\\s)|(?=$){raw_nbt_thing if type in 'text selector' else ''})", f"{colors[type]}{token}", function)
 				else:
+					print(type, token)
 					function = function.replace(token, multiple_colors_types[type](token))
 		return function
 
@@ -161,7 +176,7 @@ class Highlighter:
 					tokens.append((token, f"bracket{brackets_depth}"))
 					brackets_depth -= 1
 					brackets_depth %= 3
-				elif token in ':,;':
+				elif token in ':..,;=':
 					tokens.append((token, "delimiter"))
 				elif token[:2] == "$(":
 					tokens.append((token, f"bracket{(brackets_depth + 1) % 3}"))
@@ -187,4 +202,22 @@ class Highlighter:
 		colors = Highlighter.Database.color_codes
 		return f"{colors['macro']}${colors['bracket0']}({colors['text']}{macro[2:-1]}{colors['bracket0']})"
 
+	def ansi2html(function):
+		color_classes = Highlighter.Database.color_classes
+		ansi_codes_re = Highlighter.Database.regexes["ansi_codes"]
+		converted = ""
+		function_elements = function.split("\u001b[")[1:]
+		for element in function_elements:
+			matches = re.search(ansi_codes_re, element)
+			print(color_classes[matches.group(2)])
+			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
+		return converted
+
 Highlighter.Database.multiple_colors_types = {"selector_filter": Highlighter.selector_filter, "nbt": Highlighter.nbt, "macro": Highlighter.macro}
+
+a = Highlighter.highlight(r"""execute as @e at @e run execute as @e at @e run execute as @e at @e run execute as @e at @e run execute as @e at @e run say gex""")
+
+# a = Highlighter.selector_filter("[nbt={SelectedItem:{tag:{screwdriver:1b}}},scores={kill_bomb1=1..}]")
+
+print(a)
+copy(f"```ansi\n{a}\n```")
