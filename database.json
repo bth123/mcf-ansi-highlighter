@@ -24,6 +24,25 @@
 		"value": "\u001b[32m",
 		"string": "\u001b[33m"
 	},
+	"color_classes": {
+		"0": "light_gray",
+		"30": "gray",
+		"31": "red",
+		"32": "lime",
+		"33": "yellow",
+		"34": "blue",
+		"35": "magenta",
+		"36": "cyan",
+		"37": "white",
+		"40": "blueish_black_bg",
+		"41": "rust_brown_bg",
+		"42": "gray_40_bg",
+		"43": "gray_45_bg",
+		"44": "gray_55_bg",
+		"45": "blurple_bg",
+		"46": "light_gray_60_bg",
+		"47": "white_bg"
+	},
 	"commands": {
 		"advancement": {
 			"subcommands": ["grant", "revoke", "everything", "only", "from", "through"]
