@@ -1,4 +1,4 @@
-# MCF ansi highlighter
+# MCF ansi highlighter \[WIP\]
 
 ## Website problems
 As of right now, I am encountering difficulties with updating the site. If you want to use the latest highligter version you can [install](https://github.com/bth123/mcf-ansi-highlighter?tab=readme-ov-file#python) it on your pc.
