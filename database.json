@@ -10,7 +10,7 @@
 		"subcommand": "\u001b[34m",
 		
 		"selector": "\u001b[36m",
-		"delimiter": "\u001b[34m",
+		"separator": "\u001b[0m",
 		
 		"text": "\u001b[0m",
 		"path": "\u001b[33m",
@@ -20,9 +20,10 @@
 		"bracket1": "\u001b[35m",
 		"bracket2": "\u001b[34m",
 		
-		"key": "\u001b[0m",
+		"key": "\u001b[37m",
 		"value": "\u001b[32m",
-		"string": "\u001b[33m"
+		"string": "\u001b[33m",
+		"json-string": "\u001b[31m"
 	},
 	"color_classes": {
 		"0": "light_gray",
@@ -243,7 +244,7 @@
 			"subcommands": ["add", "list", "remove", "list"]
 		},
 		"team": {
-			"subcommands": ["list", "add", "remove", "empty", "join", "leave", "modify"]
+			"subcommands": ["list", "add", "remove", "empty", "join", "leave", "modify", "color"]
 		},
 		"teammsg": {
 			"subcommands": []
