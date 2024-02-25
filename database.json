@@ -189,7 +189,7 @@
 			"subcommands": []
 		},
 		"return": {
-			"subcommands": []
+			"subcommands": ["run", "fail"]
 		},
 		"ride": {
 			"subcommands": ["mount", "dismount"]
@@ -273,6 +273,12 @@
 			"subcommands": []
 		},
 		"tp": {
+			"subcommands": []
+		},
+		"transfer": {
+			"subcommands": []
+		},
+		"transform": {
 			"subcommands": []
 		},
 		"trigger": {
