@@ -40,6 +40,7 @@ class Hl:
 			next_char = func[idx+1:idx+2]
 			prev_char = func[idx-1]
 			prev_tokens = tokens[::-1]
+			next_chars = func[idx+1:]
 			if state["mode"] == "normal":
 				if char not in " \t#[]{}\"'$)\\\n":
 					curr_token += char
@@ -66,7 +67,8 @@ class Hl:
 						need_to_reset = False
 					elif char == "#":
 						is_comment = [True] if prev_tokens == [] or "\n" not in prev_tokens else [True if i == '\n' else False for i in prev_tokens if i not in " \t"]
-						if is_comment[0]:
+						next_word = next_chars.split(" ")[0]
+						if is_comment[0] and not any([True for command in ["define", "declare", "alias"] if command == next_word]):
 							switch_mode("comment")
 							reset_token()
 							curr_token += "\u200b"
@@ -181,9 +183,9 @@ class Hl:
 			fut_tokens = tokens[index+1:]
 			if token[0] == "\u200b":
 				token = token[1:]
-				comment_content = sub(r"^\s*#>?", "", token, flags=MULTILINE)
+				comment_content = sub(r"^\s*#(#|>)?", "", token, flags=MULTILINE)
 				edited_content = comment_content[:]
-				if token.lstrip().startswith("#>"):
+				if token[1] in "#>":
 					comment_type = "link-comment"
 				else:
 					comment_type = "comment"
@@ -248,3 +250,10 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
+print(Hl.highlight("""#define entity bth123
+  # define asd das as
+  # @cool aaa #st:f/f
+  #> asasjkjasj #nasbdjda:asd/adasd saddsa
+  #declare stoage ns:storage
+#alias uuid 8291392-92130912-3-2393dd my
+aa smth say brrr"""))
