@@ -10,7 +10,7 @@
 		"subcommand": "\u001b[34m",
 		
 		"selector": "\u001b[36m",
-		"separator": "\u001b[0m",
+		"separator": "\u001b[34m",
 		
 		"text": "\u001b[0m",
 		"path": "\u001b[33m",
@@ -22,8 +22,7 @@
 		
 		"key": "\u001b[37m",
 		"value": "\u001b[32m",
-		"string": "\u001b[33m",
-		"json-string": "\u001b[31m"
+		"string": "\u001b[32m"
 	},
 	"color_classes": {
 		"0": "light_gray",
@@ -73,7 +72,7 @@
 			"subcommands": ["at", "by", "from"]
 		},
 		"data": {
-			"subcommands": ["get", "merge", "modify", "remove", "block", "entity", "storage", "append", "insert", "prepend", "from", "string", "value"]
+			"subcommands": ["get", "merge", "modify", "remove", "block", "entity", "storage", "append", "insert", "set", "prepend", "from", "string", "value"]
 		},
 		"datapack": {
 			"subcommands": ["disable", "enable", "list", "first", "last", "before", "after", "avaliable", "enabled"]

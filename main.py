@@ -1,4 +1,4 @@
-from re import match, findall
+from re import match, findall, sub, search, MULTILINE
 from json import loads
 from string import ascii_letters
 
@@ -8,6 +8,7 @@ class Hl:
 			database_content = loads(db.read())
 		color_codes = database_content["color_codes"]
 		commands = database_content["commands"]
+		color_classes = database_content["color_classes"]
 
 	def lex(func):
 		state = {
@@ -38,6 +39,7 @@ class Hl:
 		for idx, char in enumerate(func):
 			next_char = func[idx+1:idx+2]
 			prev_char = func[idx-1]
+			prev_tokens = tokens[::-1]
 			if state["mode"] == "normal":
 				if char not in " \t#[]{}\"'$)\\\n":
 					curr_token += char
@@ -62,10 +64,13 @@ class Hl:
 						state["string_type"] = char
 						curr_token += char
 						need_to_reset = False
-					elif char == "#" and prev_char == "\n" or idx == 0:
-						switch_mode("comment")
-						reset_token()
-						curr_token = char
+					elif char == "#":
+						is_comment = [True] if prev_tokens == [] or "\n" not in prev_tokens else [True if i == '\n' else False for i in prev_tokens if i not in " \t"]
+						if is_comment[0]:
+							switch_mode("comment")
+							reset_token()
+							curr_token += "\u200b"
+						curr_token += char
 						need_to_reset = False
 					if need_to_reset:
 						reset_token(need_to_append_char)
@@ -125,7 +130,7 @@ class Hl:
 						switch_mode("string")
 						state["string_type"] = char
 						curr_token += char
-						need_to_append_char = False; need_to_reset = False
+						need_to_reset = False
 					elif char == "$":
 						need_to_reset = False
 						if next_char == "(":
@@ -146,14 +151,15 @@ class Hl:
 						switch_mode("back")
 			elif state["mode"] == "string":
 				curr_token += char
-				if char == state["string_type"] and curr_token[-1] != "\\":
+				if char == state["string_type"] and curr_token[-2] != "\\":
 					switch_mode("back")
 					reset_token()
 			elif state["mode"] == "comment":
-				curr_token += char
-				if char == "\n":
+				if char != "\n":
+					curr_token += char
+				else:
 					switch_mode("back")
-					reset_token()
+					reset_token(True)
 			if idx+1 == len(func) and curr_token != "":
 				tokens.append(curr_token)
 				break
@@ -173,21 +179,42 @@ class Hl:
 		for index, token in enumerate(tokens):
 			prev_tokens = tokens[index-1::-1]
 			fut_tokens = tokens[index+1:]
-			if token.startswith("#"):
-				if (comment_content:=token.lstrip(" \t#>")) != token.lstrip(" \t#"):
-					highlighted += colors["link-comment"] + token.replace(comment_content, "") + colors["comment"] + comment_content
+			if token[0] == "\u200b":
+				token = token[1:]
+				comment_content = sub(r"^\s*#>?", "", token, flags=MULTILINE)
+				edited_content = comment_content[:]
+				if token.lstrip().startswith("#>"):
+					comment_type = "link-comment"
 				else:
-					highlighted += colors["comment"] + token
+					comment_type = "comment"
+				# path and @this stuff
+				pathes = findall(r"#[a-zA-z_\-/:]+", comment_content)
+				decaorator_maybe_idkhonestly = findall(r"@\w+", comment_content)
+				for path in pathes:
+					edited_content = comment_content.replace(path, colors["path"] + path + colors[comment_type])
+				for i in decaorator_maybe_idkhonestly:
+					edited_content = edited_content.replace(i, colors["subcommand"] + i + colors[comment_type])
+				#
+				highlighted += colors["comment"] + token.replace(comment_content, "") + (colors[comment_type] if comment_type == "link-comment" else "") + edited_content
+			elif token in possible_subcommands and bracket_index <= 0:
+				highlighted += colors["subcommand"] + token
 			elif (raw_command:=token.replace("$", "")) in commands and bracket_index <= 0:
 				if raw_command != "execute":
 					possible_subcommands = []
 				highlighted += (colors["macro"]+"$" if "$" in token else "") + colors["command"] + raw_command
 				possible_subcommands += commands[raw_command]["subcommands"]
-			elif token in possible_subcommands and bracket_index <= 0:
-				highlighted += colors["subcommand"] + token
+			elif token[0] in "\"'":
+				# Highlighting macros
+				macros = findall(r"\$\([0-9A-z-_\.]+\)", token)
+				for macro in macros:
+					token = token.replace(macro, macro.replace("$", colors["macro"]+"$")\
+					.replace("(", colors[f"bracket{bracket_index}"]+"("+colors["text"])\
+					.replace(")", colors[f"bracket{bracket_index}"]+")"+colors["string"]))
+				#
+				highlighted += colors["string"] + token
 			elif token == "..":
 				highlighted += colors["command"] + token
-			elif token[0] in "@#$%." and token[1] != "(":
+			elif token[0] in "@#$%." and token[1] != "(" and prev_tokens[0] != "]":
 				highlighted += colors["selector"] + token
 			elif ":" in token and token != ":":
 				highlighted += colors["path"] + token
@@ -197,42 +224,6 @@ class Hl:
 			elif token in ")}]":
 				bracket_index -= 1
 				highlighted += colors[f"bracket{bracket_index%3}"] + token
-			elif token[0] in "\"'":
-				# Cehcking if this string in json
-				is_json = []
-				for pt in prev_tokens:
-					if pt in " \\\t\n": pass
-					elif pt == ":" and is_json == []:
-						is_json.append(pt)
-					elif pt[0] in "\"'":
-						is_json = True
-						break
-					else:
-						is_json = False
-						break
-				is_json2 = []
-				for ft in fut_tokens:
-					if ft in " \\\t\n": pass
-					elif ft == ":" and is_json2 == []:
-						is_json2.append(ft)
-					elif ft[0] in "\"'":
-						is_json2 = True
-						break
-					else:
-						is_json2 = False
-						break
-				if is_json or is_json2:
-					string_type = "json-string"
-				else:
-					string_type = "string"
-				# Highlighting macros
-				macros = findall(r"\$\([0-9A-z-_\.]+\)", token)
-				for macro in macros:
-					token = token.replace(macro, macro.replace("$", colors["macro"]+"$")\
-					.replace("(", colors[f"bracket{bracket_index}"]+"("+colors["text"])\
-					.replace(")", colors[f"bracket{bracket_index}"]+")"+colors[string_type]))
-				#
-				highlighted += colors[string_type] + token
 			elif token in ":;=,":
 				highlighted += colors["separator"] + token
 			elif match(r"~[0-9]*\.?[0-9]*|\^[0-9]*\.?[0-9]*|[0-9]+\.?[0-9]*[bsdf]?|\.?[0-9]+[bsdf]?", token):
@@ -247,13 +238,13 @@ class Hl:
 				highlighted += colors["text" if bracket_index <= 0 else "key"] + token
 		return highlighted
 
+	def ansi2html(function):
+		color_classes = Hl.Database.color_classes
+		ansi_codes_re = r'(([30][0-7]?)(;(4[0-7]))?m)'
+		converted = ""
+		function_elements = function.replace("\n", "<br>").split("\u001b[")[1:]
+		for element in function_elements:
+			matches = search(ansi_codes_re, element)
+			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
+		return f"<pre>{converted}</pre>"
 
-print(Hl.highlight("""summon text_display ~ ~ ~ {text:'{"score":{"name":"$dmg","objective":"var"},"color":"red"}',background:0,billboard:"center",transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[1.25f,1.25f,1.25f]},Tags:["damage","temp"]}
-
-execute as @e[type=text_display,tag=damage,tag=temp] run {
-   tag @s remove temp
-
-   data merge entity @s {start_interpolation:0,interpolation_duration:40,transformation:{translation:[0.0f,1.0f,0.0f]}}
-
-   scoreboard players set @s life.time 20
-}"""))
