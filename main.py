@@ -190,7 +190,7 @@ class Hl:
 				else:
 					comment_type = "comment"
 				# path and @this stuff
-				pathes = findall(r"#[a-zA-z_\-/:]+", comment_content)
+				pathes = findall(r"#[a-zA-z_\-]+:[a-zA-z_\-/]", comment_content)
 				decaorator_maybe_idkhonestly = findall(r"@\w+", comment_content)
 				for path in pathes:
 					edited_content = comment_content.replace(path, colors["path"] + path + colors[comment_type])
@@ -240,10 +240,9 @@ class Hl:
 				text_type = "text"
 				if bracket_index > 0:
 					text_type = "key"
-					is_nbt = [True if i == ":" else False for i in prev_tokens if i not in " \\\t\n"]
+					is_nbt = [True if i in ":=" else False for i in prev_tokens if i not in " \\\t\n"]
 					if is_nbt != [] and is_nbt[0]:
 						text_type = "value"
-					print(is_nbt)
 				highlighted += colors[text_type] + token
 		return highlighted
 
@@ -257,4 +256,3 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-print(Hl.highlight("""{key: value}"""))
