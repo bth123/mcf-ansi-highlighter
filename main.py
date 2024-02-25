@@ -237,7 +237,14 @@ class Hl:
 			elif token in " \t\n":
 				highlighted += token
 			else:
-				highlighted += colors["text" if bracket_index <= 0 else "key"] + token
+				text_type = "text"
+				if bracket_index > 0:
+					text_type = "key"
+					is_nbt = [True if i == ":" else False for i in prev_tokens if i not in " \\\t\n"]
+					if is_nbt != [] and is_nbt[0]:
+						text_type = "value"
+					print(is_nbt)
+				highlighted += colors[text_type] + token
 		return highlighted
 
 	def ansi2html(function):
@@ -250,10 +257,4 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-print(Hl.highlight("""#define entity bth123
-  # define asd das as
-  # @cool aaa #st:f/f
-  #> asasjkjasj #nasbdjda:asd/adasd saddsa
-  #declare stoage ns:storage
-#alias uuid 8291392-92130912-3-2393dd my
-aa smth say brrr"""))
+print(Hl.highlight("""{key: value}"""))
