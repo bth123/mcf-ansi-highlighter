@@ -179,6 +179,9 @@
 		"publish": {
 			"subcommands": []
 		},
+		"random": {
+			"subcommands": ["value", "roll", "reset"]
+		},
 		"recipe": {
 			"subcommands": ["give", "take"]
 		},
