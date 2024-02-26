@@ -1,232 +1,321 @@
-class Highlighter {
-    static Database = (() => {
-        const fs = require("fs");
-        const databaseContent = JSON.parse(fs.readFileSync("database.json"));
+const fs = require('fs');
 
-        return {
-            color_codes: databaseContent.color_codes,
-            commands: databaseContent.commands,
-            regexes: {
-                nbt: /(\$\([a-zA-Z0-9_-]*\)|string[0-9]+|[a-zA-Z_]\w*|[0-9]+[a-zA-Z]?|[\[\]{},:;])/,
-                string: /(?<!\\)(?:"(?:\\.|[^"])*"|\'(?:\\.|[^\'])*\')/,
-                macro: /\$\([a-zA-Z0-9_-]*\)/
-            }
-        };
-    })();
-    static rootCommand = "";
+class Hl {
+	static Database = (() => {
+		const databaseContent = JSON.parse(fs.readFileSync('database.json', 'utf-8'));
+		const { color_codes, commands, color_classes } = databaseContent;
+		return { color_codes, commands, color_classes };
+	})();
 
-    static highlight(functionString) {
-        let highlighted = "";
-        functionString = functionString.replace("\\\n", "\\newline");
-        const commands = functionString.split("\n");
+	static lex(func) {
+		let state = {
+			mode: "normal",
+			history: ["normal"],
+			string_type: "",
+			is_macro: "",
+			nbt_type: "",
+		};
+		let tokens = [];
+		var currToken = "";
 
-        commands.forEach((command) => {
-            highlighted += `${Highlighter.line(command)}\n`;
-        });
+		const resetToken = (needToAppendChar = false) => {
+			// needToAppendChar = needToAppendChar || false
+			if (currToken !== null) {
+				tokens.push(currToken)
+			}
+			if (needToAppendChar) {
+				tokens.push(char);
+			}
+			currToken = "";
+		};
 
-        return highlighted;
-    };
+		const switchMode = (mode) => {
+			if (mode === "back") {
+				state.history.pop();
+				state.mode = state.history[state.history.length - 1];
+			} else {
+				state.mode = mode;
+				state.history.push(mode);
+			}
+		};
 
-    static line(command) {
-        // Shortcuts
-        const colors = Highlighter.Database.color_codes;
-        const commands = Highlighter.Database.commands;
-        // Main
-        const rawCommand = command.trimLeft();
-        const tabsCount = command.length - rawCommand.length;
-        // Comment check
-        if (rawCommand === "") {
-            return rawCommand;
-        } else if (rawCommand[0] === "#") {
-            if (rawCommand[1] === "#" || rawCommand[1] === ">") {
-                return " ".repeat(tabsCount) + colors["comment"] + "#>" + colors["link-comment"] + rawCommand.substring(2);
-            } else {
-                return `${' '.repeat(tabsCount)}${colors['comment']}${rawCommand}`;
-            }
-        }
-        // Command highlight
-        const commandParts = Highlighter.split(rawCommand);
-        const highlighted = [];
-        for (const element of commandParts) {
-            let rawRoot = element.replace("$", "").replace("\\newline", "");
-            if (rawRoot in commands) {
-                highlighted.push(colors["command"] + element);
-                Highlighter.rootCommand = rawRoot;
-            } else if (
-                Highlighter.rootCommand !== "" &&
-                commands[Highlighter.rootCommand]["subcommands"].includes(element.replace("\\newline", ""))
-            ) {
-                highlighted.push(colors["subcommand"] + element);
-            } else if (element[0] === "@") {
-                highlighted.push(Highlighter.target(element));
-            } else if (["#", "%", "&"].includes(element[0])) {
-                highlighted.push(colors["selector"] + element);
-            } else if (element[0] === "{") {
-                highlighted.push(Highlighter.nbt(element));
-            } else if (element.includes(":")) {
-                highlighted.push(colors["path"] + element);
-            } else if (!isNaN(element)) {
-                highlighted.push(colors["number"] + element);
-            } else if (element.slice(0, -2) === "$(") {
-                highlighted.push(
-                    colors["macro"] +
-                    "$" +
-                    colors["bracket0"] +
-                    "[" +
-                    colors["argument"] +
-                    element.slice(2, -1) +
-                    colors["bracket0"] +
-                    "]"
-                );
-            } else {
-                highlighted.push(colors["argument"] + element);
-            }
-        }
-        return `${' '.repeat(tabsCount)}${highlighted.join(' ')}`.replace("\\newline", `${colors['backslash']}\\\n`);
-    };
+		const closedBrackets = { "{": "}", "[": "]" };
 
-    static split(command) {
-        command += " ";
-        const commandElements = [];
-        const strings = [];
-        let bracketsCount = 0;
-        let currentElement = "";
+		for (let idx = 0; idx < func.length; idx++) {
+			var char = func[idx];
+			const nextChar = func.slice(idx + 1, idx + 2);
+			const prevChar = func[idx - 1];
+			const prevTokens = tokens.slice().reverse();
+			const nextChars = func.slice(idx + 1);
 
-        for (let index = 0; index < command.length; index++) {
-            const char = command[index];
+			if (state.mode === "normal") {
+				if (!" \t#[]{}\"'$)\\\n".includes(char)) {
+					currToken += char;
+				} else {
+					let needToAppendChar = true;
+					let needToReset = true;
+					if ("{[".includes(char)) {
+						if (currToken.includes("@")) {
+							switchMode("filter");
+						} else {
+							var openedBrackets = 1;
+							switchMode("nbt");
+							state.nbt_type = char;
+						}
+					} else if (char === "$") {
+						needToReset = false;
+						if (nextChar === "(") {
+							switchMode("macro");
+							resetToken();
+						}
+						currToken += char;
+					} else if ("\"'".includes(char)) {
+						switchMode("string");
+						state.string_type = char;
+						currToken += char;
+						needToReset = false;
+					} else if (char === "#") {
+						// let isComment = [true];
+						// if (!prevTokens.some(i => i === "\n")) {
+						//     isComment = [...prevTokens].map(i => i !== " " && i !== "\t");
+						// }
+						// const nextWord = nextChars.split(" ")[0];
+						// if (isComment[0] && !["define", "declare", "alias"].includes(nextWord)) {
+						//     switchMode("comment");
+						//     resetToken();
+						//     currToken += "\u200b";
+						let is_comment = prevTokens.length === 0 || prevTokens.includes("\n") ? [true] : prevTokens.filter(i => i !== " " && i !== "\t").map(i => i === '\n');
+						let next_word = nextChars.split(" ")[0];
+						if (is_comment[0] && !["define", "declare", "alias"].some(command => command === next_word)) {
+							switchMode("comment");
+							resetToken();
+							currToken += "\u200b";
+						}
+						currToken += char;
+						needToReset = false;
+					}
+					if (needToReset) {
+						resetToken(needToAppendChar);
+					}
+				}
+			} else if (state.mode === "filter") {
+				if (!" \t{}\"']$)\\\n=,.".includes(char)) {
+					currToken += char;
+				} else {
+					let needToAppendChar = true;
+					let needToReset = true;
+					if (char === "]") {
+						switchMode("back");
+					} else if (char === "{") {
+						if (tokens[tokens.length - 2] === "nbt") {
+							let openedBrackets = 1;
+							switchMode("nbt");
+							state.nbt_type = char;
+						}
+					} else if ("\"'".includes(char)) {
+						switchMode("string");
+						state.string_type = char;
+						currToken += char;
+						needToReset = false;
+					} else if (char === ".") {
+						if (currToken === char) {
+							currToken += char;
+						} else {
+							if (nextChar === char) {
+								resetToken();
+								currToken = char;
+								needToReset = false;
+							} else {
+								currToken += char;
+								needToReset = false;
+							}
+						}
+						needToAppendChar = false;
+					} else if (char === "$") {
+						needToReset = false;
+						if (nextChar === "(") {
+							switchMode("macro");
+							resetToken();
+						}
+						currToken += char;
+					} else if (char === ")") {
+						currToken += char;
+						needToAppendChar = false;
+					}
+					if (needToReset) {
+						resetToken(needToAppendChar);
+					}
+				}
+			} else if (state.mode == "nbt") {
+				if (!" \t[]{}\"'$)\\\n;:,=".includes(char)) {
+					currToken += char;
+				} else {
+					let needToAppendChar = true;
+					let needToReset = true;
+					if ("\"'".includes(char)) {
+						switchMode("string");
+						state.string_type = char;
+						currToken += char;
+						needToReset = false;
+					} else if (char == "$") {
+						needToReset = false;
+						if (next_char == "(") {
+							switchMode("macro");
+							resetToken();
+						}
+						currToken += char;
+					} else if (char == ")") {
+						currToken += char;
+						needToAppendChar = false;
+					}
+					if (needToReset) {
+						resetToken(needToAppendChar);
+					}
+					// Exiting nbt state if it's closed
+					if (char == state.nbt_type) {
+						openedBrackets += 1;
+					} else if (char == closedBrackets[state.nbt_type]) {
+						openedBrackets -= 1;
+						if (openedBrackets == 0) {
+							switchMode("back");
+						}
+					}
+				}
+			} else if (state.mode == "string") {
+				currToken += char;
+				if (char == state.string_type && currToken.slice(-2, -1) != "\\") {
+					switchMode("back");
+					resetToken();
+				}
+			} else if (state.mode == "comment") {
+				if (char != "\n") {
+					currToken += char;
+				} else {
+					switchMode("back");
+					resetToken(true);
+				}
+			}
 
-            if (strings.length >= 1) {
-                if (char === strings[strings.length - 1] && command[index - 1] !== "\\") {
-                    strings.pop();
-                }
-                currentElement += char;
-            } else if (char === "\"" || char === "'") {
-                strings.push(char);
-                currentElement += char;
-            } else if (char === "{" || char === "[") {
-                bracketsCount += 1;
-                currentElement += char;
-            } else if (char === "}" || char === "]") {
-                bracketsCount -= 1;
-                currentElement += char;
-            } else if (char === " " && bracketsCount === 0) {
-                commandElements.push(currentElement);
-                currentElement = "";
-            } else {
-                currentElement += char;
-            }
-        }
+		}
+		return tokens;
+	}
 
-        return commandElements;
-    };
+	static highlight(func) {
+	// Shortcuts
+	const colors = Hl.Database.color_codes;
+	const commands = Hl.Database.commands;
 
-    static target(selector) {
-        // Shortcuts
-        const colors = Highlighter.Database.color_codes;
-        // Main
-        let tag = "";
-        let nbts = [];
-        if (selector.includes("nbt")) {
-            // States
-            let bracketsCount = 0;
-            let currTag = "";
-            for (const char of selector) {
-                if (char === "{") {
-                    bracketsCount += 1;
-                    currTag += char;
-                } else if (char === "}") {
-                    bracketsCount -= 1;
-                    currTag += char;
-                    if (bracketsCount === 0) {
-                        selector = selector.replace(currTag, `%%%%nbt${nbts.length}%%%%`);
-                        nbts.push(currTag);
-                        currTag = "";
-                    }
-                } else if (bracketsCount >= 1) {
-                    currTag += char;
-                }
-            }
-        }
-        let highlighted = colors["selector"] + selector
-            .replace("[", `${colors['bracket0']}[${colors['key']}`)
-            .replace("]", `${colors['bracket0']}]`)
-            .replace("=", `${colors['delimiter']}=${colors['value']}`)
-            .replace(",", `${colors['delimiter']},${colors['key']}`)
-            .replace("!", `${colors['delimiter']}!${colors['value']}`)
-            .replace("..", `${colors['bracket1']}..${colors['value']}`)
-            .replace("#", `${colors['selector']}#`)
-            .replace("{", `${colors['bracket1']}{$${colors['key']}`)
-            .replace("}", `${colors['bracket1']}}${colors['value']}`);
+	// Setting up variables
+	let commands_count = 0;
+	let possible_subcommands = [];
+	let bracket_index = 0;
+	let highlighted = "";
 
-        if (nbts.length >= 1) {
-            for (let index = 0; index < nbts.length; index++) {
-                highlighted = highlighted.replace(`%%%%nbt${index}%%%%`, Highlighter.nbt(nbts[index], 0));
-            }
-        }
-        return highlighted;
-    };
+	// Magic ✨
+	const tokens = Hl.lex(func);
+			console.log(tokens)
 
-    static nbt(tag, bracketsDepth = -1) {
-        const colors = Highlighter.Database.color_codes;
-        const stringRe = Highlighter.Database.regexes.string;
-        const strings = tag.match(new RegExp(stringRe, "g")) || [];
-
-        strings.forEach((string, index) => {
-            tag = tag.replace(string, `string${index}`);
-        });
-
-        function lexer(tag, bracketsDepth) {
-            const tokens = [];
-            const nbtRe = Highlighter.Database.regexes.nbt;
-
-            tag.replace(new RegExp(nbtRe, "g"), (match) => {
-                const token = match;
-
-                if ("1234567890".includes(token[0]) || "BIL".includes(token)) {
-                    tokens.push([token, "value"]);
-                } else if (token.slice(0, 6) === "string") {
-                    tokens.push([token, "string"]);
-                } else if ("[{".includes(token)) {
-                    bracketsDepth += 1;
-                    bracketsDepth %= 3;
-                    tokens.push([token, `bracket${bracketsDepth}`]);
-                } else if ("}]".includes(token)) {
-                    tokens.push([token, `bracket${bracketsDepth}`]);
-                    bracketsDepth -= 1;
-                    bracketsDepth %= 3;
-                } else if (":,;".includes(token)) {
-                    tokens.push([token, "delimiter"]);
-                } else if (token.slice(0, 2) === "$(") {
-                    tokens.push([token, `bracket${(bracketsDepth + 1) % 3}`]);
-                } else {
-                    tokens.push([token, "key"]);
-                }
-
-                return '';
-            });
-
-            return tokens;
-        }
-
-        const lexed = lexer(tag, bracketsDepth);
-        let highlighted = "";
-
-        lexed.forEach(([token, type]) => {
-            if (token.slice(0, 2) === "$(") {
-                highlighted += `${colors['macro']}$${colors[type]}(${colors['argument']}${token.slice(2, -1)}${colors[type]})`;
-            } else if (type === "string") {
-                highlighted += `${colors['str_value']}${strings[parseInt(token.replace('string', ''))]}`;
-            } else {
-                highlighted += colors[type] + token;
-                if (type === "delimiter") {
-                    highlighted += " ";
-                }
-            }
-        });
-
-        return highlighted;
-    };
+		for (let index = 0; index < tokens.length; index++) {
+			let token = tokens[index];
+			const prev_tokens = tokens.slice(0, index).reverse();
+			const fut_tokens = tokens.slice(index + 1);
+			
+			// Handle token highlighting based on token type and context
+			if (token == null) {
+				1;
+			} else if (token[0] == "\u200b") {
+				// Handle comments
+				const comment_content = token.replace(/(^\u200b#(#|>)?)/gm, "");
+				let edited_content = comment_content;
+				let comment_type = "comment";
+	
+				if (token[2] == "#" || token[2] == ">") {
+					comment_type = "link-comment";
+				}
+	
+				const pathes = comment_content.match(/#[a-zA-z_\-/:]+/g) || [];
+				const decorators = comment_content.match(/@\w+/g) || [];
+	
+				pathes.forEach(path => {
+					edited_content = edited_content.replace(path, `${colors["path"]}${path}${colors[comment_type]}`);
+				});
+	
+				decorators.forEach(decorator => {
+					edited_content = edited_content.replace(decorator, `${colors["subcommand"]}${decorator}${colors[comment_type]}`);
+				});
+	
+				highlighted += colors["comment"] + token.replace(comment_content, "") + (comment_type == "link-comment" ? colors[comment_type] : "") + edited_content;
+			} else if (" \t\n".includes(token)) {
+				// Handle whitespaces
+				highlighted += token;
+			} else if (possible_subcommands.includes(token) && bracket_index <= 0) {
+				// Handle possible subcommands
+				highlighted += colors["subcommand"] + token;
+			} else if (token.replace("$", "") in commands && bracket_index <= 0) {
+				// Handle commands
+				const raw_command = token.replace("$", "");
+				if (raw_command != "execute") {
+					possible_subcommands = [];
+				}
+				highlighted += (colors["macro"] + (token.includes("$") ? "$" : "") + colors["command"] + raw_command);
+				possible_subcommands += commands[raw_command]["subcommands"];
+			} else if (token[0] === "\"" || token[0] === "'") {
+				// Highlighting macros in strings
+				let highlightedString = colors["string"] + token;
+				const macros = token.match(/\$\([0-9A-z-_\.]+\)/g) || [];
+			
+				macros.forEach(macro => {
+					const macroName = macro.substring(2, macro.length - 1);
+					const coloredMacro = macro.replace("$", colors["macro"] + "$")
+												.replace("(", colors["bracket" + bracket_index] + "(" + colors["text"])
+												.replace(")", colors["bracket" + bracket_index] + ")" + colors["string"]);
+					highlightedString = highlightedString.replace(macro, coloredMacro);
+				});
+			
+				highlighted += highlightedString;
+			} else if (token == "..") {
+				// Handle double dots
+				highlighted += colors["command"] + token;
+			} else if ("@#$%.".includes(token[0]) && token[1] != "(" && prev_tokens[0] != "]") {
+				// Handle selectors
+				highlighted += colors["selector"] + token;
+			} else if (token.includes(":") && token != ":") {
+				// Handle paths
+				highlighted += colors["path"] + token;
+			} else if ("[{(".includes(token)) {
+				// Handle opening brackets
+				highlighted += colors["bracket" + (bracket_index % 3)] + token;
+				bracket_index++;
+			} else if ("]})".includes(token)) {
+				// Handle closing brackets
+				bracket_index--;
+				highlighted += colors["bracket" + (bracket_index % 3)] + token;
+			} else if (":;=,".includes(token)) {
+				// Handle separators
+				highlighted += colors["separator"] + token;
+			} else if (/[~\^]?[0-9]+(\.[0-9]+)?[bsdf]?/.test(token)) {
+				// Handle numbers
+				highlighted += colors["number"] + token;
+			} else if (/\$\([0-9A-z-_\.]+\)/.test(token)) {
+				// Handle macros
+				const macroName = token.substring(2, token.length - 1);
+				highlighted += `${colors["macro"]}$${colors["bracket" + bracket_index]}(${colors["text"]}${macroName}${colors["bracket" + bracket_index]})`;
+			} else if (token == "\\") {
+				// Handle backslashes
+				highlighted += colors["backslash"] + token;
+			} else {
+				// Handle text
+				highlighted += (bracket_index <= 0 ? colors["text"] : colors["key"]) + token;
+			}
+		}
+		return highlighted;
+	}
 }
 
-var a = Highlighter.highlight("say gex");
-console.log(a);
+console.log(Hl.highlight(`# comment
+#> comment
+# @brbr #foo:bar/foojk
+  execute as @a \\
+	if score #x var <= #y var \\
+	unless data entity @s foo.bar["baz"].test \\
+	  run say hello world`));
