@@ -16,7 +16,6 @@ class Hl:
 			"history": ["normal"],
 			"string_type": "",
 			"is_macro": "",
-			"nbt_type": "",
 		}
 		def reset_token(need_to_append_char=False):
 			nonlocal tokens, curr_token
@@ -47,13 +46,15 @@ class Hl:
 				else:
 					need_to_append_char = True
 					need_to_reset = True
-					if char in "{[":
+					if char == "[":
 						if "@" in curr_token:
 							switch_mode("filter")
 						else:
-							opened_brackets = 1
-							switch_mode("nbt")
-							state["nbt_type"] = char
+							switch_mode("component")
+					elif char == "{":
+						switch_mode("nbt")
+						opened_brackets = 1
+						state["nbt_type"] = char
 					elif char == "$":
 						need_to_reset = False
 						if next_char == "(":
@@ -88,7 +89,6 @@ class Hl:
 						if tokens[-2] == "nbt":
 							opened_brackets = 1
 							switch_mode("nbt")
-							state["nbt_type"] = char
 					elif char in "\"'":
 						switch_mode("string")
 						state["string_type"] = char
@@ -112,9 +112,6 @@ class Hl:
 							switch_mode("macro")
 							reset_token()
 						curr_token += char
-					elif char == ")":
-						curr_token += char
-						need_to_append_char = False
 					if need_to_reset:
 						reset_token(need_to_append_char)
 			elif state["mode"] == "macro":
@@ -122,8 +119,34 @@ class Hl:
 				if char == ")":
 					switch_mode("back")
 					reset_token()
+			elif state["mode"] == "component":
+				if char not in " \t[]{}\"'$\\\n,=":
+					curr_token += char
+				else:
+					need_to_append_char = True
+					need_to_reset = True
+					if char in "{[":
+						switch_mode("nbt")
+						opened_brackets = 1
+						state["nbt_type"] = char
+					elif char in "\"'":
+						switch_mode("string")
+						state["string_type"] = char
+						curr_token += char
+						need_to_reset = False
+					elif char == "$":
+						need_to_reset = False
+						if next_char == "(":
+							switch_mode("macro")
+							reset_token()
+						curr_token += char
+					if need_to_reset:
+						reset_token(need_to_append_char)
+				# Exiting component stte if it closed
+				if char == "]":
+					switch_mode("back")
 			elif state["mode"] == "nbt":
-				if char not in " \t[]{}\"'$)\\\n;:,=":
+				if char not in " \t[]{}\"'$)\\\n;:,":
 					curr_token += char
 				else:
 					need_to_append_char = True
@@ -139,9 +162,6 @@ class Hl:
 							switch_mode("macro")
 							reset_token()
 						curr_token += char
-					elif char == ")":
-						curr_token += char
-						need_to_append_char = False
 					if need_to_reset:
 						reset_token(need_to_append_char)
 				# Exiting nbt stte if it closed
@@ -178,8 +198,19 @@ class Hl:
 		highlighted = ""
 		# Магія ✨
 		tokens = Hl.lex(func)
+		clear_tokens = tokens[:]
+		# god sorry me for that
+		for i in range(clear_tokens.count(" ")):
+			clear_tokens.remove(" ")
+		for i in range(clear_tokens.count("\t")):
+			clear_tokens.remove("\t")
+		clear_index = 0
+		#
 		for index, token in enumerate(tokens):
-			prev_tokens = tokens[index-1::-1]
+			prev_tokens = tokens[index::-1]
+			clear_index += 1 if token not in " \t" else 0
+			next_clear_tokens = clear_tokens[clear_index:]
+			prev_clear_tokens = clear_tokens[clear_index-2::-1]
 			fut_tokens = tokens[index+1:]
 			if token[0] == "\u200b":
 				token = token[1:]
@@ -218,7 +249,7 @@ class Hl:
 				highlighted += colors["command"] + token
 			elif token[0] in "@#$%." and token[1] != "(" and prev_tokens[0] != "]":
 				highlighted += colors["selector"] + token
-			elif ":" in token and token != ":":
+			elif ":" in token and token != ":" and next_clear_tokens[0] != "=":
 				highlighted += colors["path"] + token
 			elif token in "[{(":
 				highlighted += colors[f"bracket{bracket_index%3}"] + token
@@ -230,7 +261,7 @@ class Hl:
 				highlighted += colors["separator"] + token
 			elif match(r"~[0-9]*\.?[0-9]*|\^[0-9]*\.?[0-9]*|[0-9]+\.?[0-9]*[bsdf]?|\.?[0-9]+[bsdf]?", token):
 				highlighted += colors["number"] + token
-			elif match(r"\$\([0-9A-z-_\.]+\)", token):
+			elif match(r"^\$\([0-9A-z-_\.]+\)$", token):
 				highlighted += f"{colors['macro']}${colors[f'bracket{bracket_index}']}({colors['text']}{token[2:-1]}{colors[f'bracket{bracket_index}']})"
 			elif token == "\\":
 				highlighted += colors["backslash"] + token
@@ -240,8 +271,7 @@ class Hl:
 				text_type = "text"
 				if bracket_index > 0:
 					text_type = "key"
-					is_nbt = [True if i in ":=" else False for i in prev_tokens if i not in " \\\t\n"]
-					if is_nbt != [] and is_nbt[0]:
+					if prev_clear_tokens[0] == ":":
 						text_type = "value"
 				highlighted += colors[text_type] + token
 		return highlighted
@@ -256,3 +286,4 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
+# print(Hl.highlight("give @a diamond_sword[minecraft:damage=1200000, minecraft:cusom_data={say: gex, nbt:cool, but:\"components\", more: ['optimized']}]"))
