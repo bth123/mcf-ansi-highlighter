@@ -259,9 +259,9 @@ class Hl:
 				highlighted += colors[f"bracket{bracket_index%3}"] + token
 			elif token in ":;=,":
 				highlighted += colors["separator"] + token
-			elif match(r"~[0-9]*\.?[0-9]*|\^[0-9]*\.?[0-9]*|[0-9]+\.?[0-9]*[bsdf]?|\.?[0-9]+[bsdf]?", token):
+			elif match(r"^(~-?[0-9]*\.?[0-9]*|\^-?[0-9]*\.?[0-9]*|-?[0-9]+\.?[0-9]*[bsdf]?|-?\.?[0-9]+[bsdf]?)$", token):
 				highlighted += colors["number"] + token
-			elif match(r"^\$\([0-9A-z-_\.]+\)$", token):
+			elif match(r"\$\([0-9A-z-_\.]+\)", token):
 				highlighted += f"{colors['macro']}${colors[f'bracket{bracket_index}']}({colors['text']}{token[2:-1]}{colors[f'bracket{bracket_index}']})"
 			elif token == "\\":
 				highlighted += colors["backslash"] + token
