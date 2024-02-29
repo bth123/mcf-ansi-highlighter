@@ -202,6 +202,10 @@ class Hl:
 		# god sorry me for that
 		for i in range(clear_tokens.count(" ")):
 			clear_tokens.remove(" ")
+		for i in range(clear_tokens.count("\\")):
+			clear_tokens.remove("\\")
+		for i in range(clear_tokens.count("\n")):
+			clear_tokens.remove("\n")
 		for i in range(clear_tokens.count("\t")):
 			clear_tokens.remove("\t")
 		clear_index = 0
