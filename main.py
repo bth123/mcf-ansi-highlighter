@@ -41,7 +41,7 @@ class Hl:
 			prev_tokens = tokens[::-1]
 			next_chars = func[idx+1:]
 			if state["mode"] == "normal":
-				if char not in " \t#[]{}\"'$)\\\n":
+				if char not in " \\\n\t#[]{}.\"'$":
 					curr_token += char
 				else:
 					need_to_append_char = True
@@ -66,6 +66,18 @@ class Hl:
 						state["string_type"] = char
 						curr_token += char
 						need_to_reset = False
+					elif char == ".":
+						if curr_token == char:
+							curr_token += char
+						else:
+							if next_char == char:
+								reset_token()
+								curr_token = char
+								need_to_reset = False
+							else:
+								curr_token += char
+								need_to_reset = False
+						need_to_append_char = False
 					elif char == "#":
 						is_comment = [True] if prev_tokens == [] or "\n" not in prev_tokens else [True if i == '\n' else False for i in prev_tokens if i not in " \t"]
 						next_word = next_chars.split(" ")[0]
@@ -187,9 +199,9 @@ class Hl:
 				break
 		return tokens
 
-	def highlight(func):
+	def highlight(func, theme="default"):
 		# Shotcuts
-		colors = Hl.Database.color_codes
+		colors = Hl.Database.color_codes if theme == "default" else theme
 		commands = Hl.Database.commands
 		# Setting up vars
 		commands_count = 0
@@ -238,7 +250,7 @@ class Hl:
 			elif (raw_command:=token.replace("$", "")) in commands and bracket_index <= 0:
 				if raw_command != "execute":
 					possible_subcommands = []
-				highlighted += (colors["macro"]+"$" if "$" in token else "") + colors["command"] + raw_command
+				highlighted += (colors["macro_bf_command"]+"$" if "$" in token else "") + colors["command"] + raw_command
 				possible_subcommands += commands[raw_command]["subcommands"]
 			elif token[0] in "\"'":
 				# Highlighting macros
@@ -250,19 +262,19 @@ class Hl:
 				#
 				highlighted += colors["string"] + token
 			elif token == "..":
-				highlighted += colors["command"] + token
-			elif token[0] in "@#$%." and token[1] != "(" and prev_tokens[0] != "]":
-				highlighted += colors["selector"] + token
+				highlighted += colors["range"] + token
 			elif ":" in token and token != ":" and next_clear_tokens[0] != "=":
 				highlighted += colors["path"] + token
+			elif token[0] in "@#$%." and len(token) > 1 and token[1] != "(" and prev_tokens[0] != "]":
+				highlighted += colors["selector"] + token
+			elif token in ":;=,":
+				highlighted += colors["separator"] + token
 			elif token in "[{(":
 				highlighted += colors[f"bracket{bracket_index%3}"] + token
 				bracket_index += 1
 			elif token in ")}]":
 				bracket_index -= 1
 				highlighted += colors[f"bracket{bracket_index%3}"] + token
-			elif token in ":;=,":
-				highlighted += colors["separator"] + token
 			elif match(r"^(~-?[0-9]*\.?[0-9]*|\^-?[0-9]*\.?[0-9]*|-?[0-9]+\.?[0-9]*[bsdf]?|-?\.?[0-9]+[bsdf]?)$", token):
 				highlighted += colors["number"] + token
 			elif match(r"\$\([0-9A-z-_\.]+\)", token):
@@ -275,7 +287,7 @@ class Hl:
 				text_type = "text"
 				if bracket_index > 0:
 					text_type = "key"
-					if prev_clear_tokens[0] == ":":
+					if prev_clear_tokens[1] in ":=":
 						text_type = "value"
 				highlighted += colors[text_type] + token
 		return highlighted
@@ -291,5 +303,9 @@ class Hl:
 		return f"<pre>{converted}</pre>"
 
 
-# print(Hl.lex("[I; 1, 2, 4]"))
-# print(Hl.highlight("data modify entity @r Item.components.custom_data.stuff_and_shit [I; {say:'gex'}, 2, 4, 6, 7]"))
+# print(Hl.highlight("""data get block ~ ~ ~ Age
+# setblock ~ ~ ~ minecraft:dispenser[facing=up]{Items: [{id: "minecraft:diamond", Count: 1}]}
+# $data modify storage $(id) $(path) set value "with random $(string1) stuff $(string2)"
+# tellraw @a [{"text": "hello", "color": "blue"}, {"text": "world", "color": "blue"}]
+# random roll 2..45  # neat command they added
+# give @a #minecraft:log  # plenty of wood to capture"""))

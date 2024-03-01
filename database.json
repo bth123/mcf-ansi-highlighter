@@ -5,13 +5,15 @@
 		"backslash": "\u001b[30m",
 
 		"macro": "\u001b[34m",
+		"macro_bf_command": "\u001b[37m",
 
 		"command": "\u001b[35m",
 		"subcommand": "\u001b[34m",
 		
 		"selector": "\u001b[36m",
+
 		"separator": "\u001b[34m",
-		
+		"range": "\u001b[35m",
 		"text": "\u001b[0m",
 		"path": "\u001b[33m",
 		"number": "\u001b[32m",
