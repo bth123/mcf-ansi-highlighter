@@ -290,4 +290,6 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-print(Hl.highlight("data modify entity @r Item.components.custom_data.stuff_and_shit [I; {say:'gex'}, 2, 4, 6, 7]"))
+
+# print(Hl.lex("[I; 1, 2, 4]"))
+# print(Hl.highlight("data modify entity @r Item.components.custom_data.stuff_and_shit [I; {say:'gex'}, 2, 4, 6, 7]"))
