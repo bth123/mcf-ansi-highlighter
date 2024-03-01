@@ -120,7 +120,7 @@ class Hl:
 					switch_mode("back")
 					reset_token()
 			elif state["mode"] == "component":
-				if char not in " \t[]{}\"'$\\\n,=":
+				if char not in " \\\n\t[]{}\"'$;,=":
 					curr_token += char
 				else:
 					need_to_append_char = True
@@ -290,4 +290,4 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-# print(Hl.highlight("give @a diamond_sword[minecraft:damage=1200000, minecraft:cusom_data={say: gex, nbt:cool, but:\"components\", more: ['optimized']}]"))
+print(Hl.highlight("data modify entity @r Item.components.custom_data.stuff_and_shit [I; {say:'gex'}, 2, 4, 6, 7]"))
