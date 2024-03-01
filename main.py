@@ -220,11 +220,12 @@ class Hl:
 			clear_tokens.remove("\n")
 		for i in range(clear_tokens.count("\t")):
 			clear_tokens.remove("\t")
+		clear_tokens.append('')
 		clear_index = 0
 		#
 		for index, token in enumerate(tokens):
 			prev_tokens = tokens[index::-1]
-			clear_index += 1 if token not in " \t" else 0
+			clear_index += 1 if token not in " \\\n\t" else 0
 			next_clear_tokens = clear_tokens[clear_index:]
 			prev_clear_tokens = clear_tokens[clear_index-2::-1]
 			fut_tokens = tokens[index+1:]
@@ -303,9 +304,15 @@ class Hl:
 		return f"<pre>{converted}</pre>"
 
 
-# print(Hl.highlight("""data get block ~ ~ ~ Age
-# setblock ~ ~ ~ minecraft:dispenser[facing=up]{Items: [{id: "minecraft:diamond", Count: 1}]}
-# $data modify storage $(id) $(path) set value "with random $(string1) stuff $(string2)"
-# tellraw @a [{"text": "hello", "color": "blue"}, {"text": "world", "color": "blue"}]
-# random roll 2..45  # neat command they added
-# give @a #minecraft:log  # plenty of wood to capture"""))
+# print(Hl.highlight("""xp set @s 0 points
+# xp set @s 129 levels
+
+# data remove storage ns:storage root.temp.xp
+
+# scoreboard players operation $temp ns.int = @s ns.xp.current
+# scoreboard players operation $temp ns.int *= #1000 ns.int
+# execute store result storage ns:storage root.temp.xp.current int 1 run scoreboard players operation $temp ns.int /= @s ns.xp.max
+
+# execute store result storage ns:storage root.temp.xp.level int 1 run scoreboard players get @s ns.xp.level
+
+# function ns:set_xp_bar with storage ns:storage root.temp.xp"""))
