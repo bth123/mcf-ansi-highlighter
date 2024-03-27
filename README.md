@@ -1,7 +1,7 @@
-# MCF ansi highlighter \[WIP\]
+# MCF ansi highlighter
 
-## Website problems
-As of right now, I am encountering difficulties with updating the site. If you want to use the latest highligter version you can [install](https://github.com/bth123/mcf-ansi-highlighter?tab=readme-ov-file#python) it on your pc.
+## User-application for discord
+With new user-app feature you can now have mcfunction highlight everywhere in discord. To obtain it just click \[[Authorize](https://discord.com/oauth2/authorize?client_id=1221838702016331847)\]. The app also [open source](https://github.com/bth123/mcf-ansi-highlighter/tree/user-bot) btw
 
 ## The Highlighter compared to Syntax mcfunction
 1.
