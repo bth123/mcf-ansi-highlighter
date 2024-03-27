@@ -15,6 +15,7 @@ class Hl:
 			"mode": "normal",
 			"history": ["normal"],
 			"string_type": "",
+			"nbt_type": "",
 			"is_macro": "",
 		}
 		def reset_token(need_to_append_char=False):
@@ -41,7 +42,7 @@ class Hl:
 			prev_tokens = tokens[::-1]
 			next_chars = func[idx+1:]
 			if state["mode"] == "normal":
-				if char not in " \\\n\t#[]{}.\"'$":
+				if char not in " \\\n\t#[]{}.\"'$/":
 					curr_token += char
 				else:
 					need_to_append_char = True
@@ -101,6 +102,7 @@ class Hl:
 						if tokens[-2] == "nbt":
 							opened_brackets = 1
 							switch_mode("nbt")
+							state["nbt_type"] = char
 					elif char in "\"'":
 						switch_mode("string")
 						state["string_type"] = char
@@ -246,13 +248,15 @@ class Hl:
 					edited_content = edited_content.replace(i, colors["subcommand"] + i + colors[comment_type])
 				#
 				highlighted += colors["comment"] + token.replace(comment_content, "") + (colors[comment_type] if comment_type == "link-comment" else "") + edited_content
-			elif token in possible_subcommands and bracket_index <= 0:
+			elif token in possible_subcommands and bracket_index <= 0 and prev_clear_tokens[0] != "run":
 				highlighted += colors["subcommand"] + token
 			elif (raw_command:=token.replace("$", "")) in commands and bracket_index <= 0:
 				if raw_command != "execute":
 					possible_subcommands = []
 				highlighted += (colors["macro_bf_command"]+"$" if "$" in token else "") + colors["command"] + raw_command
 				possible_subcommands += commands[raw_command]["subcommands"]
+			elif token == "/" and fut_tokens[0] in commands:
+				highlighted += colors["macro_bf_command"] + token
 			elif token[0] in "\"'":
 				# Highlighting macros
 				macros = findall(r"\$\([0-9A-z-_\.]+\)", token)
@@ -288,7 +292,7 @@ class Hl:
 				text_type = "text"
 				if bracket_index > 0:
 					text_type = "key"
-					if prev_clear_tokens[1] in ":=":
+					if prev_clear_tokens[0] in ":=":
 						text_type = "value"
 				highlighted += colors[text_type] + token
 		return highlighted
@@ -303,16 +307,4 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-
-# print(Hl.highlight("""xp set @s 0 points
-# xp set @s 129 levels
-
-# data remove storage ns:storage root.temp.xp
-
-# scoreboard players operation $temp ns.int = @s ns.xp.current
-# scoreboard players operation $temp ns.int *= #1000 ns.int
-# execute store result storage ns:storage root.temp.xp.current int 1 run scoreboard players operation $temp ns.int /= @s ns.xp.max
-
-# execute store result storage ns:storage root.temp.xp.level int 1 run scoreboard players get @s ns.xp.level
-
-# function ns:set_xp_bar with storage ns:storage root.temp.xp"""))
+# print(Hl.highlight("""execute as @e[type=item,nbt={Item:{id:"minecraft:предмет 1",Count:1b,tag:{тег:1b}}}] at @s if block ~ ~-0.2 ~ enchanting_table if entity @e[type=item,nbt={Item:{id:"minecraft:предмет 2",Count:1b}},distance=..0.5] run function"""))
