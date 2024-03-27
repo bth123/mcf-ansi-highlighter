@@ -2,6 +2,7 @@
 
 ## User-application for discord
 With new user-app feature you can now have mcfunction highlight everywhere in discord. To obtain it just click \[[Authorize](https://discord.com/oauth2/authorize?client_id=1221838702016331847)\]. The app also [open source](https://github.com/bth123/mcf-ansi-highlighter/tree/user-bot) btw
+![showcase](illistrations/showc.mp4)
 
 ## The Highlighter compared to Syntax mcfunction
 1.
