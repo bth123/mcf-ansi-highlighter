@@ -27,11 +27,15 @@ class HlModal(discord.ui.Modal):
 		max_length=1999
 	)
 	async def on_submit(self, ctx: discord.Interaction):
-		hl_ed = f"```ansi\n{Hl.highlight(self.string.value)}\n```"
-		if len(hl_ed) <= 2000:
-			await ctx.response.send_message(hl_ed)
-		else:
-			await ctx.response.send_message("Output is too long", ephemeral=True)
+		try:
+			hl_ed = f"```ansi\n{Hl.highlight(self.string.value)}\n```"
+			if len(hl_ed) <= 2000:
+				await ctx.response.send_message(hl_ed)
+			else:
+				await ctx.response.send_message("Output is too long", ephemeral=True)
+		except Exception as e:
+			print(e, self.string.value)
+			await ctx.response.send_message("Oops! Something went wrong..")
 
 @hl_bot.tree.command(name="hl", description="Highlights your mcfunctions")
 @app_commands.user_install()
@@ -39,4 +43,4 @@ class HlModal(discord.ui.Modal):
 async def hl(ctx: discord.Interaction):
 	await ctx.response.send_modal(HlModal())
 
-hl_bot.run("MGIyNRsaY1GeXbRbRyzaL1gT8Uwu.l_jk5g.9_ZOvhTeFp2pTUwUiL14bJK88rYZenC0ReYn69p")
+hl_bot.run("")
