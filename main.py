@@ -15,7 +15,6 @@ class Hl:
 			"mode": "normal",
 			"history": ["normal"],
 			"string_type": "",
-			"nbt_type": "",
 			"is_macro": "",
 		}
 		def reset_token(need_to_append_char=False):
@@ -23,6 +22,8 @@ class Hl:
 			tokens.append(curr_token) if curr_token != "" else None
 			if need_to_append_char:
 				tokens.append(char)
+			if curr_token not in " \\\t\n":
+				clear_tokens.append(curr_token)
 			curr_token = ""
 		def switch_mode(mode):
 			if mode == "back":
@@ -34,6 +35,7 @@ class Hl:
 		# Setting up vars
 		closed_bracktes = {"{":"}", "[":"]"}
 		tokens = []
+		clear_tokens = []
 		curr_token = ""
 		# Magec
 		for idx, char in enumerate(func):
@@ -42,7 +44,7 @@ class Hl:
 			prev_tokens = tokens[::-1]
 			next_chars = func[idx+1:]
 			if state["mode"] == "normal":
-				if char not in " \\\n\t#[]{}.\"'$/":
+				if char not in " \\\n\t#[]{}.\"'$":
 					curr_token += char
 				else:
 					need_to_append_char = True
@@ -102,7 +104,6 @@ class Hl:
 						if tokens[-2] == "nbt":
 							opened_brackets = 1
 							switch_mode("nbt")
-							state["nbt_type"] = char
 					elif char in "\"'":
 						switch_mode("string")
 						state["string_type"] = char
@@ -196,32 +197,40 @@ class Hl:
 				else:
 					switch_mode("back")
 					reset_token(True)
+			elif state["mode"] == "placeholder":
+				curr_token += char
+				if char == ">":
+					switch_mode("back")
+					reset_token()
 			if idx+1 == len(func) and curr_token != "":
 				tokens.append(curr_token)
 				break
-		return tokens
+		return (tokens, clear_tokens)
+
+	def optimize_len(func):
+		optimized = ""
+		ansi_codes_re = r'(\[([0-5];)?[034][0-7]?m){1,2}'
+		splitted = func.split("\u001b")
+		#
+		prev_color = splitted[0].split("m")[0] + "m"
+		for element in splitted[1:]:
+			matches = search(ansi_codes_re, element)
+			optimized += "\u001b"+element if prev_color != matches.group(0) else element.replace(prev_color, "")
+			prev_color = matches.group(0)
+		return optimized
 
 	def highlight(func, theme="default"):
 		# Shotcuts
 		colors = Hl.Database.color_codes if theme == "default" else theme
 		commands = Hl.Database.commands
 		# Setting up vars
-		commands_count = 0
 		possible_subcommands = []
 		bracket_index = 0
 		highlighted = ""
 		# Магія ✨
-		tokens = Hl.lex(func)
-		clear_tokens = tokens[:]
-		# god sorry me for that
-		for i in range(clear_tokens.count(" ")):
-			clear_tokens.remove(" ")
-		for i in range(clear_tokens.count("\\")):
-			clear_tokens.remove("\\")
-		for i in range(clear_tokens.count("\n")):
-			clear_tokens.remove("\n")
-		for i in range(clear_tokens.count("\t")):
-			clear_tokens.remove("\t")
+		lexed = Hl.lex(func)
+		tokens = lexed[0]
+		clear_tokens = lexed[1]
 		clear_tokens.append('')
 		clear_index = 0
 		#
@@ -248,15 +257,11 @@ class Hl:
 					edited_content = edited_content.replace(i, colors["subcommand"] + i + colors[comment_type])
 				#
 				highlighted += colors["comment"] + token.replace(comment_content, "") + (colors[comment_type] if comment_type == "link-comment" else "") + edited_content
-			elif token in possible_subcommands and bracket_index <= 0 and prev_clear_tokens[0] != "run":
+			elif token in possible_subcommands and bracket_index <= 0:
 				highlighted += colors["subcommand"] + token
 			elif (raw_command:=token.replace("$", "")) in commands and bracket_index <= 0:
-				if raw_command != "execute":
-					possible_subcommands = []
 				highlighted += (colors["macro_bf_command"]+"$" if "$" in token else "") + colors["command"] + raw_command
-				possible_subcommands += commands[raw_command]["subcommands"]
-			elif token == "/" and fut_tokens[0] in commands:
-				highlighted += colors["macro_bf_command"] + token
+				possible_subcommands = commands[raw_command]["subcommands"]
 			elif token[0] in "\"'":
 				# Highlighting macros
 				macros = findall(r"\$\([0-9A-z-_\.]+\)", token)
@@ -295,7 +300,7 @@ class Hl:
 					if prev_clear_tokens[0] in ":=":
 						text_type = "value"
 				highlighted += colors[text_type] + token
-		return highlighted
+		return Hl.optimize_len(highlighted)
 
 	def ansi2html(function):
 		color_classes = Hl.Database.color_classes
@@ -307,4 +312,4 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-# print(Hl.highlight("""execute as @e[type=item,nbt={Item:{id:"minecraft:предмет 1",Count:1b,tag:{тег:1b}}}] at @s if block ~ ~-0.2 ~ enchanting_table if entity @e[type=item,nbt={Item:{id:"minecraft:предмет 2",Count:1b}},distance=..0.5] run function"""))
+print(Hl.highlight("""say gex asduiahd u gagyd gas dh say say say gahdhabs"""))
