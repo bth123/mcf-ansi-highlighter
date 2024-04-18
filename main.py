@@ -35,7 +35,7 @@ class Hl:
 				state["mode"] = mode
 				state["history"].append(mode)
 		def global_check():
-			nonlocal tokens, curr_token, need_to_reset, char
+			nonlocal tokens, curr_token, need_to_reset, need_to_append_char, char
 			if char == "$":
 				need_to_reset = False
 				if next_char == "(":
@@ -50,14 +50,14 @@ class Hl:
 			elif char == ".":
 				if curr_token == char:
 					curr_token += char
+					need_to_append_char = False
 				else:
 					if next_char == char:
 						reset_token()
 						curr_token = char
-						need_to_reset = False
 					else:
 						curr_token += char
-						need_to_reset = False
+					need_to_reset = False
 		# Setting up vars
 		closed_bracktes = {"{":"}", "[":"]"}
 		tokens = []
@@ -68,7 +68,6 @@ class Hl:
 			next_char = func[idx+1:idx+2]
 			prev_char = func[idx-1]
 			prev_tokens = tokens[::-1]
-			next_chars = func[idx+1:]
 			if state["mode"] == "normal":
 				if char not in " \\\n\t#[]{}.\"'/$":
 					curr_token += char
@@ -90,7 +89,8 @@ class Hl:
 						curr_token += char
 						need_to_reset = False
 					elif char == "#":
-						is_comment = [True] if prev_tokens == [] or "\n" not in prev_tokens else [True if i == '\n' else False for i in prev_tokens if i not in " \t"]
+						next_chars = func[idx+1:]
+						is_comment = [True] if prev_tokens == [] else [True if i == '\n' else False for i in prev_tokens if i not in " \t"]
 						next_word = next_chars.split(" ")[0]
 						if is_comment[0] and not any([True for command in ["define", "declare", "alias"] if command == next_word]):
 							switch_mode("comment")
@@ -279,5 +279,4 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-# print(Hl.highlight("""
-# /function animated_java:conduit_face/animations/idle/apply"""))
+# print(Hl.highlight("""execute store result score #random_index var run random 0..3"""))
