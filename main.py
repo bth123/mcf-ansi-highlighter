@@ -82,8 +82,8 @@ class Hl:
 							switch_mode("component")
 					elif char == "{":
 						switch_mode("nbt")
-						opened_brackets = 1
 						state["nbt_type"] = char
+						opened_brackets = 1
 						need_to_append_char = True
 					elif char == "/" and ":" in curr_token:
 						curr_token += char
@@ -111,8 +111,9 @@ class Hl:
 						switch_mode("back")
 					elif char == "{":
 						if tokens[-2] == "nbt":
-							opened_brackets = 1
 							switch_mode("nbt")
+							state["nbt_type"] = char
+							opened_brackets = 1
 					if need_to_reset:
 						reset_token(need_to_append_char)
 			elif state["mode"] == "macro":
@@ -129,8 +130,8 @@ class Hl:
 					global_check()
 					if char in "{[":
 						switch_mode("nbt")
-						opened_brackets = 1
 						state["nbt_type"] = char
+						opened_brackets = 1
 					if need_to_reset:
 						reset_token(need_to_append_char)
 				# Exiting component stte if it closed
@@ -279,4 +280,6 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-# print(Hl.highlight("""execute store result score #random_index var run random 0..3"""))
+# print(Hl.highlight("""execute at @a[nbt={SelectedItem:{id:"minecraft:bow",tag:{CustomModelData:1}}}] run tag @e[type=arrow, distance=3] add slowness_arrow
+
+# execute at @e[tag=slowness_arrow,nbt={}] run effect give @e slowness 10 2 true"""))
