@@ -219,7 +219,7 @@
 			"subcommands": []
 		},
 		"setblock": {
-			"subcommands": []
+			"subcommands": ["destroy", "keep", "replace"]
 		},
 		"setidletimeout": {
 			"subcommands": []
