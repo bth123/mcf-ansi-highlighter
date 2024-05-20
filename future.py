@@ -3,7 +3,7 @@ from re import MULTILINE, findall, match, search, sub
 
 
 # I use  btw (You can only see it if you too hehe)
-# 16.05.24
+# 19.05.24
 class Hl:
     class Database:
         with open("database.json", "r", encoding="utf-8") as db:
@@ -13,183 +13,46 @@ class Hl:
         color_classes = database_content["color_classes"]
 
     def lex(func):
-        state = {
-            "mode": "normal",
-            "history": ["normal"],
-            "string_type": "",
-            "is_macro": "",
-        }
-
-        def reset_token(new_token_type="text"):
-            nonlocal curr_token, curr_token_type, char
-            tokens.append((curr_token, curr_token_type))
-            curr_token = char
-            curr_token_type = new_token_type
+        def reset_token():
+            nonlocal curr_token, curr_type, tokens, clear_tokens
+            tokens.append((curr_token, curr_type))
+            if curr_token not in " \\\t\n":
+                clear_tokens.append(curr_token)
 
         def switch_mode(mode):
+            nonlocal history
             if mode == "back":
-                state["history"].pop(-1)
-                state["mode"] = state["history"][-1]
+                history.pop(-1)
             else:
-                state["mode"] = mode
-                state["history"].append(mode)
+                history.append(mode)
 
-        def global_check():
-            nonlocal tokens, curr_token, need_to_reset, need_to_append_char, char
-            if char == "$":
-                need_to_reset = False
-                if next_char == "(":
-                    switch_mode("macro")
-                    reset_token("macro_bf_command")
-                else:
-                    curr_token += char
-            elif char in "\"'":
-                switch_mode("string")
-                state["string_type"] = char
-                curr_token += char
-                need_to_reset = False
-            elif char == ".":
-                if curr_token == char:
-                    curr_token += char
-                    need_to_append_char = False
-                else:
-                    if next_char == char:
-                        reset_token()
-                        curr_token = char
-                    else:
-                        curr_token += char
-                    need_to_reset = False
-
-        # Setting up vars
-        closed_bracktes = {"{": "}", "[": "]"}
         tokens = []
         clear_tokens = []
+        history = ["normal"]
+        string_type = ""
+        nbt_type = ""
         curr_token = ""
-        curr_token_type = "text"
-        # Циганскі фокуси
+        curr_type = "text"
+
+        # Циганські фокуси
         for idx, char in enumerate(func):
             next_char = func[idx + 1 : idx + 2]
-            prev_tokens = tokens[::-1]
-            if state["mode"] == "normal":
-                if char not in " \\\n\t#[]{}.\"'/$":
-                    curr_token += char
-                else:
-                    need_to_append_char = True
-                    need_to_reset = True
-                    global_check()
-                    if char == "[":
-                        curr_token_type = "bracket"
-                        if "@" in curr_token:
-                            switch_mode("filter")
-                        else:
-                            switch_mode("component")
-                    elif char == "{":
-                        curr_token_type = "bracket"
-                        switch_mode("nbt")
-                        state["nbt_type"] = char
-                        opened_brackets = 1
-                    elif char == "/" and ":" in curr_token:
-                        curr_token += char
-                        need_to_reset = False
-                    elif char == "#":
-                        next_chars = func[idx + 1 :]
-                        is_comment = (
-                            [True]
-                            if prev_tokens == []
-                            else [
-                                True if i == "\n" else False
-                                for i in prev_tokens
-                                if i not in " \t"
-                            ]
-                        )
-                        next_word = next_chars.split(" ")[0]
-                        if is_comment[0] and not any(
-                            [
-                                True
-                                for command in ["define", "declare", "alias"]
-                                if command == next_word
-                            ]
-                        ):
-                            switch_mode("comment")
-                            reset_token()
-                            curr_token += "\u200b"
-                        curr_token += char
-                        need_to_reset = False
-                    if need_to_reset:
-                        reset_token(need_to_append_char)
-            elif state["mode"] == "filter":
-                if char not in " \t{}\"']$)\\\n=,.":
-                    curr_token += char
-                else:
-                    need_to_append_char = True
-                    need_to_reset = True
-                    global_check()
-                    if char == "]":
-                        switch_mode("back")
-                    elif char == "{":
-                        if tokens[-2] == "nbt":
-                            switch_mode("nbt")
-                            state["nbt_type"] = char
-                            opened_brackets = 1
-                    if need_to_reset:
-                        reset_token(need_to_append_char)
-            elif state["mode"] == "macro":
-                curr_token += char
-                if char == ")":
-                    switch_mode("back")
+            prev_char = func[idx - 1 : idx - 2]
+            if history[-1] == "normal":
+                # " \\\t\n#[{\"'$"
+                if char in " \\\t\n":
                     reset_token()
-            elif state["mode"] == "component":
-                if char not in " \\\n\t[]{}\"'$;,=":
-                    curr_token += char
-                else:
-                    need_to_append_char = True
-                    need_to_reset = True
-                    global_check()
-                    if char in "{[":
-                        switch_mode("nbt")
-                        state["nbt_type"] = char
-                        opened_brackets = 1
-                    if need_to_reset:
-                        reset_token(need_to_append_char)
-                # Exiting component stte if it closed
-                if char == "]":
-                    switch_mode("back")
-            elif state["mode"] == "nbt":
-                if char not in " \t[]{}\"'$)\\\n;:,":
-                    curr_token += char
-                else:
-                    need_to_append_char = True
-                    need_to_reset = True
-                    global_check()
-                    if need_to_reset:
-                        reset_token(need_to_append_char)
-                # Exiting nbt stte if it closed
-                if char == state["nbt_type"]:
-                    opened_brackets += 1
-                elif char == closed_bracktes[state["nbt_type"]]:
-                    opened_brackets -= 1
-                    if opened_brackets == 0:
-                        switch_mode("back")
-            elif state["mode"] == "string":
-                curr_token += char
-                if char == state["string_type"] and curr_token[-2] != "\\":
-                    switch_mode("back")
-                    reset_token()
-            elif state["mode"] == "comment":
-                if char != "\n":
-                    curr_token += char
-                else:
-                    switch_mode("back")
-                    reset_token(True)
-            elif state["mode"] == "placeholder":
-                curr_token += char
-                if char == ">":
-                    switch_mode("back")
-                    reset_token()
-            if idx + 1 == len(func) and curr_token != "":
-                tokens.append(curr_token)
-                break
-        return (tokens, clear_tokens)
+                    curr_type = "none"
+                elif char == "#":
+                    pass
+                elif char == "[":
+                    if tokens[-1][0][0] == "@":
+                        switch_mode("filter")
+                        curr_type = "bracket"
+                    else:
+                        switch_mode(
+                            ""
+                        )  # I have no clue how to separate nbt array from cmponent
 
     def optimize_len(func):
         optimized = ""
