@@ -210,7 +210,7 @@ class Hl:
 				token = token[1:]
 				comment_content = sub(r"^\s*#(#|>)?", "", token, flags=MULTILINE)
 				edited_content = comment_content[:]
-				if token[1] in "#>":
+				if len(token) >= 2 and token[1] in "#>":
 					comment_type = "link-comment"
 				else:
 					comment_type = "comment"
@@ -280,4 +280,4 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-print(Hl.highlight("""execute summon shulker run summon husk ~ ~ ~"""))
+print(Hl.highlight("""say gex\n#\n"""))
