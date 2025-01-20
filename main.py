@@ -280,4 +280,10 @@ class Hl:
 			converted += f'<span class="ansi_{color_classes[matches.group(2)]}{" "+color_classes[matches.group(4)] if matches.group(4) != None else ""}">{element.replace(matches.group(1), "")}</span>'
 		return f"<pre>{converted}</pre>"
 
-print(Hl.highlight("""say gex\n#\n"""))
+# Tests
+if __name__ == "__main__":
+	print(Hl.highlight("""say gex\n#\n"""))
+	import pyperclip
+
+	pyperclip.copy(Hl.ansi2html("""[35mexecute [34mas [36m@e[33m[[37mnbt[34m=[35m{[37mInventory[34m:[[33m{[37mSlot[34m:[32m0[34m, [37mid[34m:[32m"meinkampf:carrot_on_a_stick"[34m, [37mtag[34m:[35m{[37mdisplay[34m:{[37mName[34m:[33m[[35m{}[34m, [35m{[32m"text"[34m: [32m"Зонтик"[34m, [32m"vitalic"[34m:[32mfalse[35m}[33m][34m}, [37mTags[34m:[[32m"ambrella"[34m, [32m"activated"[34m][35m}[33m}[34m][35m}[33m] [34mat [36m@e[33m[[37mnbt[34m=[35m{[37mInventory[34m:[[33m{[37mSlot[34m:[32m0[34m, [37mid[34m:[32m"meinkampf:carrot_on_a_stick"[34m, [37mtag[34m:[35m{[37mdisplay[34m:{[37mName[34m:[33m[[35m{}[34m, [35m{[32m"text"[34m: [32m"Зонтик"[34m, [32m"vitalic"[34m:[32mfalse[35m}[33m][34m}, [37mTags[34m:[[32m"ambrella"[34m, [32m"activated"[34m][35m}[33m}[34m][35m}[33m] [34mrun [35mmotion [36m@e[33m[[37mnbt[34m=[35m{[37mInventory[34m:[[33m{[37mSlot[34m:[32m0[34m, [37mid[34m:[32m"meinkampf:carrot_on_a_stick"[34m, [37mtag[34m:[35m{[37mdisplay[34m:{[37mName[34m:[33m[[35m{}[34m, [35m{[32m"text"[34m: [32m"Зонтик"[34m, [32m"vitalic"[34m:[32mfalse[35m}[33m][34m}, [37mTags[34m:[[32m"ambrella"[34m, [32m"activated"[34m][35m}[33m}[34m][35m}[34m, [37mlimit[34m=[32m1[33m] [34mset [32m15 69 9.6
+	 [0msexecute gex as [36m.zontik_user [0mrun [35mfunction [33meschkere:gex/foo/bar/activae_end"""))
